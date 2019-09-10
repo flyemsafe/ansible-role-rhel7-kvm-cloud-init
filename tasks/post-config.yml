@@ -20,10 +20,30 @@
   changed_when: false
   register: vm_gateway
 
+# - name: Deploy ifcfg-{{ vm_nic.stdout }} to VM
+#   template:
+#     src: ifcfg.j2
+#     dest: "/etc/sysconfig/network-scripts/ifcfg-{{ vm_nic.stdout }}"
+#   delegate_to: "{{ vm_name }}"
+#   when: vm_ip.stdout is defined and vm_ip.stdout != ""
+
+- name: ensure libvirt packages are installed
+  shell: >
+    yum install -y "{{ item }}"
+  loop:
+    - NetworkManager-glib
+    - nm-connection-editor
+    - libsemanage-python
+    - policycoreutils-python
+
 - name: Deploy ifcfg-{{ vm_nic.stdout }} to VM
-  template:
-    src: ifcfg.j2
-    dest: "/etc/sysconfig/network-scripts/ifcfg-{{ vm_nic.stdout }}"
+  nmcli:
+    conn_name: "{{ vm_nic.stdout }}"
+    ifname: "{{ vm_nic.stdout }}"
+    type: ethernet
+    ip4: "{{ vm_ip.stdout }}"
+    gw4: "{{ vm_gateway.stdout }}"
+    state: present
   delegate_to: "{{ vm_name }}"
   when: vm_ip.stdout is defined and vm_ip.stdout != ""
 
